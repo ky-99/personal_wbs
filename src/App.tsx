@@ -15,6 +15,11 @@ function App() {
     setMilestones(newMilestones)
   }
 
+  const handleReset = () => {
+    setTasks([])
+    setMilestones({ releaseDates: [], releaseJudgmentDates: [] })
+  }
+
   return (
     <div className="min-h-screen bg-skin">
       <header className="bg-accent text-white py-3">
@@ -28,7 +33,7 @@ function App() {
           <TaskInputForm onGenerate={handleGenerate} />
         </div>
         <div className="w-[70%] overflow-auto">
-          <TimelineOutput tasks={tasks} milestones={milestones} />
+          <TimelineOutput tasks={tasks} milestones={milestones} onReset={handleReset} />
         </div>
       </main>
     </div>

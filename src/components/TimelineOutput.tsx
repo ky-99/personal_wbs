@@ -1,13 +1,14 @@
-import { FiDownload } from 'react-icons/fi'
+import { FiDownload, FiRefreshCw } from 'react-icons/fi'
 import { Task, MilestoneDates, taskBarColor, milestoneColors } from '../types/task'
 import { TimelineChart } from './TimelineChart'
 
 interface TimelineOutputProps {
   tasks: Task[]
   milestones: MilestoneDates
+  onReset: () => void
 }
 
-export function TimelineOutput({ tasks, milestones }: TimelineOutputProps) {
+export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputProps) {
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
@@ -188,6 +189,13 @@ export function TimelineOutput({ tasks, milestones }: TimelineOutputProps) {
             >
               <FiDownload size={12} />
               CSV
+            </button>
+            <button
+              onClick={onReset}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+            >
+              <FiRefreshCw size={12} />
+              リセット
             </button>
           </div>
         )}
