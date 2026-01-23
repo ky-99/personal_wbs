@@ -19,7 +19,19 @@ export function DateRangePicker({
   onChangeEnd,
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showAbove, setShowAbove] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      // カレンダーの高さ約280px + 余裕を持たせる
+      setShowAbove(spaceBelow < 500)
+    }
+    setIsOpen(!isOpen)
+  }
 
   const parseDate = (dateStr: string): Date | undefined => {
     if (!dateStr) return undefined
@@ -76,8 +88,9 @@ export function DateRangePicker({
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="w-full flex items-center gap-2 px-2 py-1 text-sm text-left border border-gray-300 rounded hover:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       >
         <FiCalendar size={14} className="text-gray-400 flex-shrink-0" />
@@ -87,7 +100,7 @@ export function DateRangePicker({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+        <div className={`absolute z-50 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 ${showAbove ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
           <DayPicker
             mode="range"
             selected={selected}

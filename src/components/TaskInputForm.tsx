@@ -1,7 +1,22 @@
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { v4 as uuidv4 } from 'uuid'
-import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiDatabase } from 'react-icons/fi'
+import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiArrowUp } from 'react-icons/fi'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers'
 import { Task, MilestoneDates, milestoneColors } from '../types/task'
 import { taskListSchema, TaskFormValues } from '../schemas/taskSchema'
 import { TaskRow } from './TaskRow'
@@ -26,6 +41,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     formState: { errors },
     reset,
     setValue,
+    getValues,
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskListSchema),
     defaultValues: {
@@ -35,10 +51,30 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     },
   })
 
-  const { fields: taskFields, append: appendTask, remove: removeTask } = useFieldArray({
+  const { fields: taskFields, append: appendTask, remove: removeTask, move: moveTask, replace: replaceTasks } = useFieldArray({
     control,
     name: 'tasks',
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = taskFields.findIndex((field) => field.id === active.id)
+      const newIndex = taskFields.findIndex((field) => field.id === over.id)
+      moveTask(oldIndex, newIndex)
+    }
+  }
 
   const { fields: judgmentFields, append: appendJudgment, remove: removeJudgment } = useFieldArray({
     control,
@@ -85,31 +121,15 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     })
   }
 
-  const loadTestData = () => {
-    const today = new Date()
-    const formatDate = (date: Date) => {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-    const addDays = (date: Date, days: number) => {
-      const result = new Date(date)
-      result.setDate(result.getDate() + days)
-      return result
-    }
-
-    reset({
-      tasks: [
-        { id: uuidv4(), title: '要件定義', startDate: formatDate(today), endDate: formatDate(addDays(today, 2)) },
-        { id: uuidv4(), title: '設計', startDate: formatDate(addDays(today, 2)), endDate: formatDate(addDays(today, 4)) },
-        { id: uuidv4(), title: '実装', startDate: formatDate(addDays(today, 4)), endDate: formatDate(addDays(today, 8)) },
-        { id: uuidv4(), title: 'テスト', startDate: formatDate(addDays(today, 8)), endDate: formatDate(addDays(today, 10)) },
-        { id: uuidv4(), title: 'ドキュメント作成', startDate: formatDate(addDays(today, 9)), endDate: formatDate(addDays(today, 11)) },
-      ],
-      releaseJudgmentDates: [{ date: formatDate(addDays(today, 11)) }],
-      releaseDates: [{ date: formatDate(addDays(today, 13)) }],
+  const sortByStartDate = () => {
+    const tasks = getValues('tasks')
+    const sorted = [...tasks].sort((a, b) => {
+      if (!a.startDate && !b.startDate) return 0
+      if (!a.startDate) return 1
+      if (!b.startDate) return -1
+      return a.startDate.localeCompare(b.startDate)
     })
+    replaceTasks(sorted)
   }
 
   return (
@@ -122,31 +142,40 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-40 bg-accent text-white">
             <tr>
+              <th className="p-2 w-6"></th>
               <th className="p-2 text-left font-medium">タスク名</th>
               <th className="p-2 text-left font-medium w-28" colSpan={2}>期間</th>
               <th className="p-2 w-8"></th>
             </tr>
           </thead>
-          <tbody>
-            {taskFields.map((field, index) => (
-              <TaskRow
-                key={field.id}
-                index={index}
-                register={register}
-                errors={errors}
-                onRemove={() => removeTask(index)}
-                canRemove={taskFields.length > 1}
-                control={control}
-                setValue={setValue}
-              />
-            ))}
-          </tbody>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+          >
+            <SortableContext
+              items={taskFields.map((field) => field.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <tbody>
+                {taskFields.map((field, index) => (
+                  <TaskRow
+                    key={field.id}
+                    id={field.id}
+                    index={index}
+                    register={register}
+                    onRemove={() => removeTask(index)}
+                    canRemove={taskFields.length > 1}
+                    control={control}
+                    setValue={setValue}
+                    totalRows={taskFields.length}
+                  />
+                ))}
+              </tbody>
+            </SortableContext>
+          </DndContext>
         </table>
-        {(errors.tasks?.message || errors.tasks?.root?.message) && (
-          <p className="text-red-500 text-xs px-2 py-1">
-            {errors.tasks?.message || errors.tasks?.root?.message}
-          </p>
-        )}
       </div>
 
       <div className="border-t border-accent/20">
@@ -215,50 +244,57 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
         </div>
       </div>
 
-      <div className="p-3 border-t border-accent/20 flex justify-between items-center">
-        <div className="flex items-center gap-2">
+      <div className="p-3 border-t border-accent/20">
+        {errors.tasks && (
+          <p className="text-red-500 text-xs mb-2">
+            日付、タイトルは必ず入力してください
+          </p>
+        )}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={addTaskRow}
+              className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+              title="行追加"
+            >
+              <FiPlus size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={removeLastRow}
+              disabled={taskFields.length <= 1}
+              className="p-2 text-accent hover:bg-accent/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="行削除"
+            >
+              <FiMinus size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={resetAll}
+              className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
+              title="リセット"
+            >
+              <FiRefreshCw size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={sortByStartDate}
+              className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+              title="開始日でソート"
+            >
+              <FiArrowUp size={18} />
+            </button>
+          </div>
+
           <button
-            type="button"
-            onClick={addTaskRow}
-            className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
-            title="行追加"
+            type="submit"
+            className="flex items-center gap-1 px-4 py-2 bg-accent hover:bg-accent-dark text-white text-sm font-medium rounded transition-colors"
           >
-            <FiPlus size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={removeLastRow}
-            disabled={taskFields.length <= 1}
-            className="p-2 text-accent hover:bg-accent/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="行削除"
-          >
-            <FiMinus size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={resetAll}
-            className="p-2 text-red-500 hover:bg-red-500/10 rounded transition-colors"
-            title="リセット"
-          >
-            <FiRefreshCw size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={loadTestData}
-            className="p-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-            title="テストデータ"
-          >
-            <FiDatabase size={18} />
+            <FiPlay size={16} />
+            生成
           </button>
         </div>
-
-        <button
-          type="submit"
-          className="flex items-center gap-1 px-4 py-2 bg-accent hover:bg-accent-dark text-white text-sm font-medium rounded transition-colors"
-        >
-          <FiPlay size={16} />
-          生成
-        </button>
       </div>
     </form>
   )
