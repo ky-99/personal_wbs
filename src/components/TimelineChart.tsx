@@ -171,7 +171,7 @@ export function TimelineChart({ tasks, milestones }: TimelineChartProps) {
               const barPos = getTaskBarPosition(task)
               return (
                 <tr key={task.id} className="h-9 bg-white">
-                  <td className="border border-gray-300 p-1 sticky left-0 z-20 bg-white font-medium truncate max-w-[120px]">
+                  <td className="border border-gray-300 p-1 sticky left-0 z-20 bg-white font-medium whitespace-nowrap">
                     {task.title}
                   </td>
                   {days.map((day, colIndex) => {

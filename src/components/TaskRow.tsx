@@ -1,5 +1,5 @@
 import { UseFormRegister, Control, useWatch } from 'react-hook-form'
-import { FiTrash2, FiMenu } from 'react-icons/fi'
+import { FiTrash2, FiMenu, FiPlus } from 'react-icons/fi'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TaskFormValues } from '../schemas/taskSchema'
@@ -14,19 +14,20 @@ interface TaskRowProps {
   control: Control<TaskFormValues>
   setValue: (name: any, value: string) => void
   totalRows: number
+  onAddRow: () => void
+  onInsertBelow: () => void
 }
 
-const focusNextInput = (currentIndex: number, totalRows: number) => {
-  const nextIndex = currentIndex + 1
-  if (nextIndex < totalRows) {
-    const nextInput = document.querySelector<HTMLInputElement>(
-      `input[data-task-index="${nextIndex}"]`
+const focusInput = (targetIndex: number, totalRows: number) => {
+  if (targetIndex >= 0 && targetIndex < totalRows) {
+    const input = document.querySelector<HTMLInputElement>(
+      `input[data-task-index="${targetIndex}"]`
     )
-    nextInput?.focus()
+    input?.focus()
   }
 }
 
-export function TaskRow({ id, index, register, onRemove, canRemove, control, setValue, totalRows }: TaskRowProps) {
+export function TaskRow({ id, index, register, onRemove, canRemove, control, setValue, totalRows, onAddRow, onInsertBelow }: TaskRowProps) {
   const {
     attributes,
     listeners,
@@ -43,10 +44,26 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // IME変換中のEnterは無視
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+    // IME変換中は無視
+    if (e.nativeEvent.isComposing) return
+
+    if (e.key === 'Enter') {
       e.preventDefault()
-      focusNextInput(index, totalRows)
+      if (index === totalRows - 1) {
+        // 最後の行の場合、新しい行を追加
+        onAddRow()
+        setTimeout(() => {
+          focusInput(index + 1, totalRows + 1)
+        }, 0)
+      } else {
+        focusInput(index + 1, totalRows)
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      focusInput(index + 1, totalRows)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      focusInput(index - 1, totalRows)
     }
   }
 
@@ -96,16 +113,26 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
         />
       </td>
       <td className="p-1">
-        {canRemove && (
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             type="button"
-            onClick={onRemove}
-            className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-            title="削除"
+            onClick={onInsertBelow}
+            className="p-1 text-gray-400 hover:text-accent"
+            title="下に行を追加"
           >
-            <FiTrash2 size={14} />
+            <FiPlus size={14} />
           </button>
-        )}
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="p-1 text-gray-400 hover:text-red-500"
+              title="削除"
+            >
+              <FiTrash2 size={14} />
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   )

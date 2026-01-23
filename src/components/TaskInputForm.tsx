@@ -51,7 +51,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     },
   })
 
-  const { fields: taskFields, append: appendTask, remove: removeTask, move: moveTask, replace: replaceTasks } = useFieldArray({
+  const { fields: taskFields, append: appendTask, remove: removeTask, move: moveTask, replace: replaceTasks, insert: insertTask } = useFieldArray({
     control,
     name: 'tasks',
   })
@@ -170,6 +170,8 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
                     control={control}
                     setValue={setValue}
                     totalRows={taskFields.length}
+                    onAddRow={addTaskRow}
+                    onInsertBelow={() => insertTask(index + 1, createEmptyTask())}
                   />
                 ))}
               </tbody>
