@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-skin: #FFF5EB;
+  --color-accent: #0891B2;
+  --color-accent-dark: #0E7490;
+  --font-family-sans: 'Noto Sans JP', sans-serif;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  background-color: var(--color-skin);
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* react-day-picker カスタムスタイル */
+.rdp {
+  --rdp-accent-color: #0891B2;
+  --rdp-accent-background-color: #0891B220;
+  font-size: 0.875rem;
+}
+
+.rdp-day_button {
+  border-radius: 4px;
+}
+
+.rdp-selected .rdp-day_button {
+  background-color: var(--rdp-accent-color);
+  color: white;
+}
+
+.rdp-range_middle .rdp-day_button {
+  background-color: var(--rdp-accent-background-color);
+  color: inherit;
+}
