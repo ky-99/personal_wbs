@@ -21,16 +21,25 @@ export function TimelineOutput({ tasks, milestones }: TimelineOutputProps) {
   }
 
   const handleDownloadCsv = () => {
-    const headers = ['タスク名', '開始日', '期限日']
-    const rows = tasks.map((task) => [
+    const headers = ['種別', 'タスク名', '開始日', '期限日']
+    const taskRows = tasks.map((task) => [
+      'task',
       task.title,
       task.startDate,
       task.endDate,
     ])
+    const judgmentRows = milestones.releaseJudgmentDates
+      .filter((d) => d)
+      .map((date) => ['releaseJudgment', 'リリース判定日', date, ''])
+    const releaseRows = milestones.releaseDates
+      .filter((d) => d)
+      .map((date) => ['release', 'リリース日', date, ''])
+
+    const allRows = [...taskRows, ...judgmentRows, ...releaseRows]
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ...allRows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n')
 
     const bom = '\uFEFF'

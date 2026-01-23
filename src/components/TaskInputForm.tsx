@@ -1,7 +1,8 @@
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { v4 as uuidv4 } from 'uuid'
-import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiArrowUp } from 'react-icons/fi'
+import { useRef } from 'react'
+import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiArrowUp, FiUpload } from 'react-icons/fi'
 import {
   DndContext,
   closestCenter,
@@ -130,6 +131,100 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
       return a.startDate.localeCompare(b.startDate)
     })
     replaceTasks(sorted)
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"') {
+        inQuotes = !inQuotes
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    result.push(current.trim())
+    return result
+  }
+
+  const handleImportCsv = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      const lines = text.split('\n').filter((line) => line.trim())
+
+      // ヘッダー行をスキップ
+      const dataLines = lines.slice(1)
+
+      const importedTasks: Task[] = []
+      const importedJudgmentDates: { date: string }[] = []
+      const importedReleaseDates: { date: string }[] = []
+
+      dataLines.forEach((line) => {
+        const fields = parseCsvLine(line)
+
+        // 新形式（種別,タスク名,開始日,期限日）
+        if (fields.length >= 4) {
+          const type = fields[0]
+          const title = fields[1]
+          const startDate = fields[2]
+          const endDate = fields[3]
+
+          if (type === 'task' && (title || startDate || endDate)) {
+            importedTasks.push({
+              id: uuidv4(),
+              title,
+              startDate,
+              endDate,
+            })
+          } else if (type === 'releaseJudgment' && startDate) {
+            importedJudgmentDates.push({ date: startDate })
+          } else if (type === 'release' && startDate) {
+            importedReleaseDates.push({ date: startDate })
+          }
+        }
+        // 旧形式（タスク名,開始日,期限日）への後方互換性
+        else if (fields.length === 3) {
+          const title = fields[0]
+          const startDate = fields[1]
+          const endDate = fields[2]
+
+          if (title || startDate || endDate) {
+            importedTasks.push({
+              id: uuidv4(),
+              title,
+              startDate,
+              endDate,
+            })
+          }
+        }
+      })
+
+      if (importedTasks.length > 0 || importedJudgmentDates.length > 0 || importedReleaseDates.length > 0) {
+        reset({
+          tasks: importedTasks.length > 0 ? importedTasks : [createEmptyTask()],
+          releaseJudgmentDates: importedJudgmentDates.length > 0 ? importedJudgmentDates : [{ date: '' }],
+          releaseDates: importedReleaseDates.length > 0 ? importedReleaseDates : [{ date: '' }],
+        })
+      }
+    }
+    reader.readAsText(file)
+
+    // ファイル入力をリセット
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   return (
@@ -287,6 +382,21 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
             >
               <FiArrowUp size={18} />
             </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+              title="CSVインポート"
+            >
+              <FiUpload size={18} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleImportCsv}
+              className="hidden"
+            />
           </div>
 
           <button
