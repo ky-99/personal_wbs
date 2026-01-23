@@ -2,11 +2,6 @@ import { Control, UseFormSetValue, useWatch } from 'react-hook-form'
 import { FiX } from 'react-icons/fi'
 import { DatePicker } from './DatePicker'
 
-interface FormValues {
-  releaseJudgmentDates: { date: string }[]
-  releaseDates: { date: string }[]
-}
-
 interface MilestoneDateRowProps {
   index: number
   fieldName: 'releaseJudgmentDates' | 'releaseDates'

@@ -38,8 +38,8 @@ export const milestoneDateSchema = z.object({
 
 export const taskListSchema = z.object({
   tasks: z.array(taskSchema),
-  releaseJudgmentDates: z.array(milestoneDateSchema).optional(),
-  releaseDates: z.array(milestoneDateSchema).optional(),
+  releaseJudgmentDates: z.array(milestoneDateSchema),
+  releaseDates: z.array(milestoneDateSchema),
 }).refine(
   (data) => {
     const hasCompleteTask = data.tasks.some(

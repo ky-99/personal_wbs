@@ -18,11 +18,6 @@ const createEmptyTask = (): Task => ({
   endDate: '',
 })
 
-interface FormValues extends TaskFormValues {
-  releaseJudgmentDates: { date: string }[]
-  releaseDates: { date: string }[]
-}
-
 export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
   const {
     register,
@@ -31,7 +26,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     formState: { errors },
     reset,
     setValue,
-  } = useForm<FormValues>({
+  } = useForm<TaskFormValues>({
     resolver: zodResolver(taskListSchema),
     defaultValues: {
       tasks: Array(5).fill(null).map(() => createEmptyTask()),
@@ -55,7 +50,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     name: 'releaseDates',
   })
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = (data: TaskFormValues) => {
     const validTasks = data.tasks.filter(
       (task) => task.title && task.startDate && task.endDate
     )
