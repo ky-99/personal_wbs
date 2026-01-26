@@ -5,6 +5,7 @@ export const taskSchema = z.object({
   title: z.string(),
   startDate: z.string(),
   endDate: z.string(),
+  completed: z.boolean(),
 }).superRefine((data, ctx) => {
   const hasAnyData = data.title || data.startDate || data.endDate
   if (hasAnyData) {

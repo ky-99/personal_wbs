@@ -1,5 +1,5 @@
-import { UseFormRegister, Control, useWatch } from 'react-hook-form'
-import { FiTrash2, FiMenu, FiPlus } from 'react-icons/fi'
+import { UseFormRegister, Control, useWatch, UseFormSetValue } from 'react-hook-form'
+import { FiTrash2, FiMenu, FiPlus, FiCheck } from 'react-icons/fi'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TaskFormValues } from '../schemas/taskSchema'
@@ -12,7 +12,7 @@ interface TaskRowProps {
   onRemove: () => void
   canRemove: boolean
   control: Control<TaskFormValues>
-  setValue: (name: any, value: string) => void
+  setValue: UseFormSetValue<TaskFormValues>
   totalRows: number
   onAddRow: () => void
   onInsertBelow: () => void
@@ -77,11 +77,20 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
     name: `tasks.${index}.endDate`,
   })
 
+  const completed = useWatch({
+    control,
+    name: `tasks.${index}.completed`,
+  })
+
+  const toggleCompleted = () => {
+    setValue(`tasks.${index}.completed`, !completed)
+  }
+
   return (
     <tr
       ref={setNodeRef}
       style={style}
-      className="border-b border-gray-200 hover:bg-accent/5 group h-9"
+      className={`border-b border-gray-200 hover:bg-accent/5 group h-9 ${completed ? 'bg-gray-100' : ''}`}
     >
       <td className="p-1 w-6">
         <button
@@ -95,14 +104,30 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
         </button>
       </td>
       <td className="p-1">
-        <input
-          type="text"
-          {...register(`tasks.${index}.title`)}
-          placeholder="タスク名"
-          data-task-index={index}
-          onKeyDown={handleKeyDown}
-          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-accent focus:border-transparent"
-        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleCompleted}
+            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+              completed
+                ? 'bg-gray-500 border-gray-500 text-white'
+                : 'border-gray-300 hover:border-accent'
+            }`}
+            title={completed ? '完了を解除' : '完了にする'}
+          >
+            {completed && <FiCheck size={12} />}
+          </button>
+          <input
+            type="text"
+            {...register(`tasks.${index}.title`)}
+            placeholder="タスク名"
+            data-task-index={index}
+            onKeyDown={handleKeyDown}
+            className={`w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-accent focus:border-transparent ${
+              completed ? 'text-gray-400 line-through' : ''
+            }`}
+          />
+        </div>
       </td>
       <td className="p-1 w-28" colSpan={2}>
         <DateRangePicker

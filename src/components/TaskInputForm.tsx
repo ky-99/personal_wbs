@@ -2,7 +2,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { v4 as uuidv4 } from 'uuid'
 import { useRef } from 'react'
-import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiArrowUp, FiUpload } from 'react-icons/fi'
+import { FiPlus, FiMinus, FiPlay, FiRefreshCw, FiArrowUp, FiUpload, FiChevronsUp } from 'react-icons/fi'
 import {
   DndContext,
   closestCenter,
@@ -32,6 +32,7 @@ const createEmptyTask = (): Task => ({
   title: '',
   startDate: '',
   endDate: '',
+  completed: false,
 })
 
 export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
@@ -133,6 +134,53 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
     replaceTasks(sorted)
   }
 
+  // 今日の日付を基準に、未完了タスクで開始日が今日より前のものを押し上げる
+  const pushUpTasks = () => {
+    const tasks = getValues('tasks')
+
+    // 今日の日付を取得
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    const todayStr = formatDate(today)
+
+    // 未完了タスクで開始日が今日より前のものを押し上げる
+    const updatedTasks = tasks.map((task) => {
+      if (task.completed) return task
+      if (!task.startDate || !task.endDate) return task
+
+      if (task.startDate < todayStr) {
+        // 開始日と終了日の差分（日数）を計算
+        const startDate = new Date(task.startDate)
+        const endDate = new Date(task.endDate)
+        const duration = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        // 新しい開始日を今日に設定
+        const newStartDate = new Date(today)
+
+        // 新しい終了日を計算
+        const newEndDate = new Date(newStartDate)
+        newEndDate.setDate(newEndDate.getDate() + duration)
+
+        return {
+          ...task,
+          startDate: formatDate(newStartDate),
+          endDate: formatDate(newEndDate),
+        }
+      }
+      return task
+    })
+
+    replaceTasks(updatedTasks)
+  }
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const parseCsvLine = (line: string): string[] => {
@@ -174,12 +222,13 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
       dataLines.forEach((line) => {
         const fields = parseCsvLine(line)
 
-        // 新形式（種別,タスク名,開始日,期限日）
+        // 新形式（種別,タスク名,開始日,期限日,完了）
         if (fields.length >= 4) {
           const type = fields[0]
           const title = fields[1]
           const startDate = fields[2]
           const endDate = fields[3]
+          const completed = fields.length >= 5 ? fields[4] === 'true' : false
 
           if (type === 'task' && (title || startDate || endDate)) {
             importedTasks.push({
@@ -187,6 +236,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
               title,
               startDate,
               endDate,
+              completed,
             })
           } else if (type === 'releaseJudgment' && startDate) {
             importedJudgmentDates.push({ date: startDate })
@@ -206,6 +256,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
               title,
               startDate,
               endDate,
+              completed: false,
             })
           }
         }
@@ -381,6 +432,14 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
               title="開始日でソート"
             >
               <FiArrowUp size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={pushUpTasks}
+              className="p-2 text-accent hover:bg-accent/10 rounded transition-colors"
+              title="未完了タスクを今日以降に押し上げ"
+            >
+              <FiChevronsUp size={18} />
             </button>
             <button
               type="button"

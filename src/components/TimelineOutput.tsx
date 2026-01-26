@@ -1,5 +1,5 @@
 import { FiDownload, FiRefreshCw } from 'react-icons/fi'
-import { Task, MilestoneDates, taskBarColor, milestoneColors } from '../types/task'
+import { Task, MilestoneDates, taskBarColor, completedTaskBarColor, milestoneColors } from '../types/task'
 import { TimelineChart } from './TimelineChart'
 
 interface TimelineOutputProps {
@@ -22,19 +22,20 @@ export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputPro
   }
 
   const handleDownloadCsv = () => {
-    const headers = ['種別', 'タスク名', '開始日', '期限日']
+    const headers = ['種別', 'タスク名', '開始日', '期限日', '完了']
     const taskRows = tasks.map((task) => [
       'task',
       task.title,
       task.startDate,
       task.endDate,
+      task.completed ? 'true' : 'false',
     ])
     const judgmentRows = milestones.releaseJudgmentDates
       .filter((d) => d)
-      .map((date) => ['releaseJudgment', 'リリース判定日', date, ''])
+      .map((date) => ['releaseJudgment', 'リリース判定日', date, '', ''])
     const releaseRows = milestones.releaseDates
       .filter((d) => d)
-      .map((date) => ['release', 'リリース日', date, ''])
+      .map((date) => ['release', 'リリース日', date, '', ''])
 
     const allRows = [...taskRows, ...judgmentRows, ...releaseRows]
 
@@ -210,6 +211,10 @@ export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputPro
           <div className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: taskBarColor }}></span>
             <span>タスク</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: completedTaskBarColor }}></span>
+            <span>完了タスク</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: milestoneColors.releaseJudgmentDate }}></span>

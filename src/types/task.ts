@@ -3,6 +3,7 @@ export interface Task {
   title: string
   startDate: string  // YYYY-MM-DD
   endDate: string    // YYYY-MM-DD
+  completed: boolean // 完了フラグ
 }
 
 export interface MilestoneDates {
@@ -11,6 +12,7 @@ export interface MilestoneDates {
 }
 
 export const taskBarColor = '#EAB308' // 濃い黄色
+export const completedTaskBarColor = '#9CA3AF' // グレー（完了タスク）
 
 export const milestoneColors = {
   releaseDate: '#EF4444',        // 赤

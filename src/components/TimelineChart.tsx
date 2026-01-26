@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Task, MilestoneDates, taskBarColor, milestoneColors } from '../types/task'
+import { Task, MilestoneDates, taskBarColor, completedTaskBarColor, milestoneColors } from '../types/task'
 
 interface TimelineChartProps {
   tasks: Task[]
@@ -169,9 +169,12 @@ export function TimelineChart({ tasks, milestones }: TimelineChartProps) {
           ) : (
             tasks.map((task) => {
               const barPos = getTaskBarPosition(task)
+              const barColor = task.completed ? completedTaskBarColor : taskBarColor
               return (
-                <tr key={task.id} className="h-9 bg-white">
-                  <td className="border border-gray-300 p-1 sticky left-0 z-20 bg-white font-medium whitespace-nowrap">
+                <tr key={task.id} className={`h-9 ${task.completed ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className={`border border-gray-300 p-1 sticky left-0 z-20 font-medium whitespace-nowrap ${
+                    task.completed ? 'bg-gray-50 text-gray-400 line-through' : 'bg-white'
+                  }`}>
                     {task.title}
                   </td>
                   {days.map((day, colIndex) => {
@@ -202,7 +205,7 @@ export function TimelineChart({ tasks, milestones }: TimelineChartProps) {
                           <div
                             className="absolute inset-0 z-10"
                             style={{
-                              backgroundColor: taskBarColor,
+                              backgroundColor: barColor,
                               opacity: 0.6,
                             }}
                           />
