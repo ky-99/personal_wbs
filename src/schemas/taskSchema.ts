@@ -6,6 +6,7 @@ export const taskSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   completed: z.boolean(),
+  undecided: z.boolean(),
 }).superRefine((data, ctx) => {
   const hasAnyData = data.title || data.startDate || data.endDate
   if (hasAnyData) {
@@ -16,19 +17,22 @@ export const taskSchema = z.object({
         path: ['title'],
       })
     }
-    if (!data.startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '開始日を選択してください',
-        path: ['startDate'],
-      })
-    }
-    if (!data.endDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '終了日を選択してください',
-        path: ['endDate'],
-      })
+    // 開始時期未定の場合は日付バリデーションをスキップ
+    if (!data.undecided) {
+      if (!data.startDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '開始日を選択してください',
+          path: ['startDate'],
+        })
+      }
+      if (!data.endDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '終了日を選択してください',
+          path: ['endDate'],
+        })
+      }
     }
   }
 })
@@ -44,7 +48,7 @@ export const taskListSchema = z.object({
 }).refine(
   (data) => {
     const hasCompleteTask = data.tasks.some(
-      (task) => task.title && task.startDate && task.endDate
+      (task) => task.title && (task.undecided || (task.startDate && task.endDate))
     )
     return hasCompleteTask
   },

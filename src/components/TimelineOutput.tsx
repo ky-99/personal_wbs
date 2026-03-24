@@ -5,10 +5,11 @@ import { TimelineChart } from './TimelineChart'
 interface TimelineOutputProps {
   tasks: Task[]
   milestones: MilestoneDates
+  undecidedTasks: Task[]
   onReset: () => void
 }
 
-export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputProps) {
+export function TimelineOutput({ tasks, milestones, undecidedTasks, onReset }: TimelineOutputProps) {
   const downloadFile = (content: string, filename: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType })
     const url = URL.createObjectURL(blob)
@@ -22,22 +23,31 @@ export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputPro
   }
 
   const handleDownloadCsv = () => {
-    const headers = ['種別', 'タスク名', '開始日', '期限日', '完了']
+    const headers = ['種別', 'タスク名', '開始日', '期限日', '完了', '時期未定']
     const taskRows = tasks.map((task) => [
       'task',
       task.title,
       task.startDate,
       task.endDate,
       task.completed ? 'true' : 'false',
+      'false',
+    ])
+    const undecidedRows = undecidedTasks.map((task) => [
+      'task',
+      task.title,
+      '',
+      '',
+      task.completed ? 'true' : 'false',
+      'true',
     ])
     const judgmentRows = milestones.releaseJudgmentDates
       .filter((d) => d)
-      .map((date) => ['releaseJudgment', 'リリース判定日', date, '', ''])
+      .map((date) => ['releaseJudgment', 'リリース判定日', date, '', '', ''])
     const releaseRows = milestones.releaseDates
       .filter((d) => d)
-      .map((date) => ['release', 'リリース日', date, '', ''])
+      .map((date) => ['release', 'リリース日', date, '', '', ''])
 
-    const allRows = [...taskRows, ...judgmentRows, ...releaseRows]
+    const allRows = [...taskRows, ...undecidedRows, ...judgmentRows, ...releaseRows]
 
     const csvContent = [
       headers.join(','),
@@ -168,7 +178,7 @@ export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputPro
     <div className="h-full flex flex-col">
       <div className="h-10 px-3 border-b border-accent/20 bg-accent/5 flex justify-between items-center">
         <h2 className="text-sm font-bold text-accent-dark">タイムライン</h2>
-        {tasks.length > 0 && (
+        {(tasks.length > 0 || undecidedTasks.length > 0) && (
           <div className="flex gap-1">
             <button
               onClick={handleDownloadSvg}
@@ -204,9 +214,39 @@ export function TimelineOutput({ tasks, milestones, onReset }: TimelineOutputPro
 
       <div className="flex-1 overflow-auto p-2">
         <TimelineChart tasks={tasks} milestones={milestones} />
+
+        {undecidedTasks.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-xs font-bold text-accent-dark mb-2">
+              開始時期未定のタスク
+            </h3>
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-accent text-white">
+                  <th className="border border-accent-dark p-1 text-left w-8">#</th>
+                  <th className="border border-accent-dark p-1 text-left">タスク名</th>
+                  <th className="border border-accent-dark p-1 text-left w-20">ステータス</th>
+                </tr>
+              </thead>
+              <tbody>
+                {undecidedTasks.map((task, index) => (
+                  <tr key={task.id} className="h-9 bg-white hover:bg-accent/5">
+                    <td className="border border-gray-300 p-1 text-gray-400">{index + 1}</td>
+                    <td className="border border-gray-300 p-1 font-medium">{task.title}</td>
+                    <td className="border border-gray-300 p-1">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
+                        時期未定
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {tasks.length > 0 && (
+      {(tasks.length > 0 || undecidedTasks.length > 0) && (
         <div className="p-2 border-t border-accent/20 flex gap-4 text-xs">
           <div className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: taskBarColor }}></span>

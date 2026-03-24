@@ -4,6 +4,7 @@ export interface Task {
   startDate: string  // YYYY-MM-DD
   endDate: string    // YYYY-MM-DD
   completed: boolean // 完了フラグ
+  undecided: boolean // 開始時期未定フラグ
 }
 
 export interface MilestoneDates {

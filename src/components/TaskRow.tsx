@@ -82,8 +82,22 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
     name: `tasks.${index}.completed`,
   })
 
+  const undecided = useWatch({
+    control,
+    name: `tasks.${index}.undecided`,
+  })
+
   const toggleCompleted = () => {
     setValue(`tasks.${index}.completed`, !completed)
+  }
+
+  const toggleUndecided = () => {
+    const newVal = !undecided
+    setValue(`tasks.${index}.undecided`, newVal)
+    if (newVal) {
+      setValue(`tasks.${index}.startDate`, '')
+      setValue(`tasks.${index}.endDate`, '')
+    }
   }
 
   return (
@@ -129,13 +143,39 @@ export function TaskRow({ id, index, register, onRemove, canRemove, control, set
           />
         </div>
       </td>
-      <td className="p-1 w-28" colSpan={2}>
-        <DateRangePicker
-          startDate={startDate || ''}
-          endDate={endDate || ''}
-          onChangeStart={(date) => setValue(`tasks.${index}.startDate`, date)}
-          onChangeEnd={(date) => setValue(`tasks.${index}.endDate`, date)}
-        />
+      <td className="p-1" colSpan={2} style={{ width: '160px', minWidth: '160px', maxWidth: '160px' }}>
+        {undecided ? (
+          <div className="flex items-center gap-1 w-full">
+            <span className="text-xs text-gray-400 italic flex-1 px-2">時期未定</span>
+            <button
+              type="button"
+              onClick={toggleUndecided}
+              className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors whitespace-nowrap flex-shrink-0"
+              title="日付を設定する"
+            >
+              解除
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 w-full">
+            <div className="flex-1 min-w-0">
+              <DateRangePicker
+                startDate={startDate || ''}
+                endDate={endDate || ''}
+                onChangeStart={(date) => setValue(`tasks.${index}.startDate`, date)}
+                onChangeEnd={(date) => setValue(`tasks.${index}.endDate`, date)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={toggleUndecided}
+              className="text-[10px] px-1 py-0.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors whitespace-nowrap flex-shrink-0 opacity-0 group-hover:opacity-100"
+              title="開始時期未定にする"
+            >
+              未定
+            </button>
+          </div>
+        )}
       </td>
       <td className="p-1">
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

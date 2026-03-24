@@ -24,7 +24,7 @@ import { TaskRow } from './TaskRow'
 import { MilestoneDateRow } from './MilestoneDateRow'
 
 interface TaskInputFormProps {
-  onGenerate: (tasks: Task[], milestones: MilestoneDates) => void
+  onGenerate: (tasks: Task[], milestones: MilestoneDates, undecidedTasks: Task[]) => void
 }
 
 const createEmptyTask = (): Task => ({
@@ -33,6 +33,7 @@ const createEmptyTask = (): Task => ({
   startDate: '',
   endDate: '',
   completed: false,
+  undecided: false,
 })
 
 export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
@@ -92,9 +93,12 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
 
   const onSubmit = (data: TaskFormValues) => {
     const validTasks = data.tasks.filter(
-      (task) => task.title && task.startDate && task.endDate && !task.completed
+      (task) => task.title && !task.undecided && task.startDate && task.endDate && !task.completed
     )
-    if (validTasks.length > 0) {
+    const undecidedTasks = data.tasks.filter(
+      (task) => task.title && task.undecided && !task.completed
+    )
+    if (validTasks.length > 0 || undecidedTasks.length > 0) {
       const milestones: MilestoneDates = {
         releaseJudgmentDates: data.releaseJudgmentDates
           .map((d) => d.date)
@@ -103,7 +107,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
           .map((d) => d.date)
           .filter((d) => d !== ''),
       }
-      onGenerate(validTasks, milestones)
+      onGenerate(validTasks, milestones, undecidedTasks)
     }
   }
 
@@ -233,12 +237,14 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
           const completed = fields.length >= 5 ? fields[4] === 'true' : false
 
           if (type === 'task' && (title || startDate || endDate)) {
+            const undecided = fields.length >= 6 ? fields[5] === 'true' : false
             importedTasks.push({
               id: uuidv4(),
               title,
               startDate,
               endDate,
               completed,
+              undecided,
             })
           } else if (type === 'releaseJudgment' && startDate) {
             importedJudgmentDates.push({ date: startDate })
@@ -259,6 +265,7 @@ export function TaskInputForm({ onGenerate }: TaskInputFormProps) {
               startDate,
               endDate,
               completed: false,
+              undecided: false,
             })
           }
         }

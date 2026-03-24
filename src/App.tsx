@@ -5,18 +5,21 @@ import { TimelineOutput } from './components/TimelineOutput'
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [undecidedTasks, setUndecidedTasks] = useState<Task[]>([])
   const [milestones, setMilestones] = useState<MilestoneDates>({
     releaseDates: [],
     releaseJudgmentDates: [],
   })
 
-  const handleGenerate = (newTasks: Task[], newMilestones: MilestoneDates) => {
+  const handleGenerate = (newTasks: Task[], newMilestones: MilestoneDates, newUndecidedTasks: Task[]) => {
     setTasks(newTasks)
     setMilestones(newMilestones)
+    setUndecidedTasks(newUndecidedTasks)
   }
 
   const handleReset = () => {
     setTasks([])
+    setUndecidedTasks([])
     setMilestones({ releaseDates: [], releaseJudgmentDates: [] })
   }
 
@@ -33,7 +36,7 @@ function App() {
           <TaskInputForm onGenerate={handleGenerate} />
         </div>
         <div className="w-[70%] overflow-auto">
-          <TimelineOutput tasks={tasks} milestones={milestones} onReset={handleReset} />
+          <TimelineOutput tasks={tasks} milestones={milestones} undecidedTasks={undecidedTasks} onReset={handleReset} />
         </div>
       </main>
     </div>
